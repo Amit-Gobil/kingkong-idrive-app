@@ -22,6 +22,7 @@ const { Diag, parseDtcReply, statusInfo, replyTo, hex } = require('./diag.js');
 const { ECU } = require('./ecus.js');
 const { CHANNELS } = require('./channels.js');
 const { Bus, Poller, DME } = require('./poller.js');
+const { DetailsReader } = require('./details.js');
 const { LogStore } = require('./logstore.js');
 const { hashVin, readLicense, vinFromReply } = require('./license.js');
 const { Uploader } = require('./uploader.js');
@@ -112,6 +113,8 @@ class KingKongDrag extends OnlineApp {
         this._poller = new Poller({ diag: this._diag, bus: this._bus, log: logger, now: mono,
             should: () => this._wantDme() && this._engineRunning(),
             onSample: (values, now) => { this._trackPeaks(values); this._store.row(now, Object.assign({ speed: this._speed }, values)); } });
+        this._details = new DetailsReader({ diag: this._diag, bus: this._bus, log: logger,
+            should: () => !this._lock && this._visible && this._tab === 'details' && this._engineRunning() });
         this._timer = new RunTimer(SPLITS, {
             onDone: (run) => this._runDone(run),
             onLaunch: () => { this._peakG = 0; this._newBest = {}; this._qr = null; },
@@ -397,6 +400,7 @@ class KingKongDrag extends OnlineApp {
         this._gpu.connect();
         setInterval(() => { const t = mono(); this._timer.idle(t); this._race.tick(t); this._checkCar(); this._updateLog(); }, 50);
         setInterval(() => { if (!this._lock) this._uploader.tick().then(() => { this._logFiles = this._store.list(); }); }, UPLOAD_EVERY_MS);
+        setInterval(() => { if (this._visible && this._tab === 'details') this._details.tick().catch(() => {}); }, 160);
         this._watchCar();
         this._poller.start();
         this._applyCluster();   // off by default; drawn on the cluster only when turned on (and after the on-car check)
@@ -539,6 +543,7 @@ class KingKongDrag extends OnlineApp {
         return { lock: this._lock, tab: this._tab, qr: this._qr, state: t.state, elapsed: t.elapsed(mono()), speed: this._speed, signal: this._signal,
             result: t.result, trap: t.trapSpeed, best: this._best, newBest: this._newBest, peakG: this._peakG, canShare: !!this._lastRun,
             running: this._engineRunning(), values: p.values, peaks: this._peaks, hz: p.hz, found: p.supported ? p.supported.length : null, total: CHANNELS.length,
+            details: this._tab === 'details' ? this._details.model() : null,
             missing: p.supported ? p.missing : [], map: this._map, fel: this._fel,
             log: { auto: this._settings.autolog, manual: this._manual, active: this._store.active, count: this._logFiles.length,
                 bytes: this._logFiles.reduce((n, f) => n + f.size, 0), waiting: this._logFiles.filter((f) => f.name.endsWith('.csv')).length },

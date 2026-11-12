@@ -1,3 +1,7 @@
+## 0.13.0
+
+DETAILS tab: the engine unit's values in groups, four columns, exactly the coverage Car Data shows — Engine, Temperatures, Oil, Fuel, Ignition & knock (per cylinder), VANOS and Injector corrections (per cylinder). Read progressively from the DME one identifier at a time ("n of N read"), with "… N more" where a column runs out of room. Identifiers and scalings are the standard engine-unit measurement blocks; the code and design are ours.
+
 ## 0.12.0
 
 Rebuilt as the KingKong live-data app with Car Data's tab set, our own code and gold/black design: ENGINE, FUEL & AIR, TRANSMISSION, DETAILS, SETTINGS. ENGINE and FUEL & AIR are live (rail/LPFP, lambda + target, boost + target, wastegate, intake/charge-air/ambient, ethanol); Transmission/Details/Settings are placeholders being built next. Drag timer and virtual race move to a separate KingKong Race app.

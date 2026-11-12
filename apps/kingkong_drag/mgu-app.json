@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "kingkong_drag",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "tree": "package",
   "internet": true,
   "modules": [
@@ -12,6 +12,7 @@
     "src/cluster_theme.js",
     "src/cluster_render_client.js",
     "src/channels.js",
+    "src/details.js",
     "src/poller.js",
     "src/logstore.js",
     "src/diag.js",

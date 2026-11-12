@@ -305,6 +305,32 @@ function drawFuelAir(rec, m) {
     eKv(rec, R + 440, 620, 'CHARGE AIR', efmt(v.chargeAir) + '°C', WHITE);
     eKv(rec, R + 900, 620, 'AMBIENT', v.ambient != null ? efmt(v.ambient) + ' kPa' : '–', WHITE);
 }
+/* ---- DETAILS tab: the engine unit's values in groups, four columns ---- */
+function drawDetails(rec, m) {
+    const det = m.details;
+    rec.roundRect(60, 152, 15, 15, 7, m.running ? GREEN : DIM);
+    rec.text(det ? ('ENGINE UNIT VALUES  ·  ' + det.read + ' of ' + det.of + ' read') : (m.running ? 'Reading the engine unit…' : 'ENGINE OFF — START THE ENGINE'),
+        86, 166, 26, DIM, { font: 'mono' });
+    if (!det) return;
+    const byGroup = {}; det.groups.forEach((g) => { byGroup[g.group] = g.rows; });
+    const cols = [['Engine', 'Oil'], ['Temperatures', 'Fuel'], ['Ignition and knock', 'VANOS'], ['Injector corrections']];
+    const X = [60, 760, 1460, 2160], CW = 636, STEP = 25, MAXY = 750;
+    cols.forEach((groups, ci) => {
+        let y = 206; const x = X[ci];
+        groups.forEach((gname) => {
+            const rows = byGroup[gname] || [];
+            if (y + 40 > MAXY) return;
+            rec.text(gname.toUpperCase(), x, y, 30, GOLD, { font: 'bold' }); y += 40;
+            for (let r = 0; r < rows.length; r++) {
+                if (y > MAXY - STEP) { rec.text('… ' + (rows.length - r) + ' more', x, y, 24, GOLD_DIM, { font: 'mono' }); y += STEP; break; }
+                rec.text(rows[r][0], x, y, 24, DIM, { font: 'mono' });
+                rec.text(rows[r][1], x + CW, y, 24, WHITE, { font: 'num', align: 'right' });
+                y += STEP;
+            }
+            y += 18;
+        });
+    });
+}
 /* ---- placeholder for tabs not yet rebuilt ---- */
 function drawSoon(rec, m, title, sub) {
     eStatus(rec, m);
@@ -477,7 +503,7 @@ function draw(rec, m) {
     if (m.tab === 'live') drawEngine(rec, m);
     else if (m.tab === 'fuelair') drawFuelAir(rec, m);
     else if (m.tab === 'transmission') drawSoon(rec, m, 'TRANSMISSION', 'Gearbox temperatures, clutch and torque (ZF 8HP)');
-    else if (m.tab === 'details') drawSoon(rec, m, 'DETAILS', 'All engine-unit values in groups — ignition per cylinder, injector corrections, VANOS');
+    else if (m.tab === 'details') drawDetails(rec, m);
     else if (m.tab === 'settings') drawSoon(rec, m, 'SETTINGS', 'Units, bar ranges and peak reset');
     else drawEngine(rec, m);
     buttons(m).forEach((b) => drawButton(rec, b));
