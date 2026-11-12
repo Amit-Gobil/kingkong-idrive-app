@@ -124,6 +124,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     assert(lamRs[1].did === 0x5640 && lamRs[2].obd === 0x34, 'lambda: S58 DID then OBD');
     const lv = channels.obdParse([0x41, 0x34, 0x66, 0x66, 0x80, 0x00], [lamRs[2]]);  // 0x6666=26214 -> /32768 = 0.800
     assert(Math.abs(lv.lambda - 0.800) < 0.005, 'lambda via OBD ' + lv.lambda);
+    // rpm (OBD 0C), boost (OBD 0B MAP), ambient (OBD 33 baro) for the S58
+    const rpmR = channels.readers(channels.CHANNELS.find((c) => c.key === 'rpm'))[1];
+    assert(rpmR.obd === 0x0C, 'rpm has an OBD fallback');
+    assert(channels.obdParse([0x41, 0x0C, 0x0F, 0xA0], [rpmR]).rpm === 1000, 'rpm via OBD 0C (0x0FA0=4000 -> /4 = 1000)');
+    const boR = channels.readers(channels.CHANNELS.find((c) => c.key === 'boost'))[1];
+    assert(boR.obd === 0x0B && channels.obdParse([0x41, 0x0B, 0x96], [boR]).boost === 150, 'boost via OBD 0B (150 kPa)');
+    const amR = channels.readers(channels.CHANNELS.find((c) => c.key === 'ambient'))[1];
+    assert(amR.obd === 0x33 && channels.obdParse([0x41, 0x33, 0x65], [amR]).ambient === 101, 'ambient via OBD 33 (101 kPa)');
     console.log('ok channels');
 }());
 
@@ -221,6 +229,9 @@ function dmeReply(target, sid, d) {
         if (d[0] === 0x05) return [0x41, 0x05, 0x7A];          // 122 -> 82 C
         if (d[0] === 0x34) return [0x41, 0x34, 0x66, 0x66, 0x80, 0x00];  // 26214 -> lambda 0.800
         if (d[0] === 0x42) return [0x41, 0x42, 0x36, 0xB0];    // 14000 -> 14.0 V (battery)
+        if (d[0] === 0x0C) return [0x41, 0x0C, 0x2E, 0xE0];    // 12000 -> 3000 rpm
+        if (d[0] === 0x0B) return [0x41, 0x0B, 0x28];          // 40 kPa MAP
+        if (d[0] === 0x33) return [0x41, 0x33, 0x65];          // 101 kPa baro
         return [0x7F, 0x01, 0x12];
     }
     if (sid === 0x2F) return dmeMap === 'mhd' ? [0x6F].concat(d) : [0x7F, 0x2F, 0x31];

@@ -11,13 +11,16 @@ const SLOW_EVERY = 20;
 const MAX_PER_REQUEST = 8;
 
 const CHANNELS = [
-    { key: 'rpm', did: 0x4807, type: 's16', k: 0.5, head: 'RPM', d: 0, min: 0, max: 10000 },
+    { key: 'rpm', did: 0x4807, type: 's16', k: 0.5, head: 'RPM', d: 0, min: 0, max: 10000,
+        alt: [{ obd: 0x0C, type: 'u16', k: 0.25 }] },   // OBD-II PID 0C ((256A+B)/4), for S58 which refuses 4807
     { key: 'pedal', did: 0x5814, type: 's16', k: 0.01220703, head: 'Accelerator Pedal (%)', d: 1, min: -5, max: 105 },
     { key: 'throttle', did: 0x4600, type: 's16', k: 0.0078125, head: 'Throttle Position (%)', d: 1, min: -5, max: 105 },
     { key: 'gear', did: 0x5881, type: 'u8', k: 1, head: 'Gear', d: 0, min: 0, max: 10 },
-    { key: 'boost', did: 0x4205, type: 'u16', k: 0.0078125, head: 'Boost Pressure Actual (kPaa)', d: 1, min: 20, max: 600 },
+    { key: 'boost', did: 0x4205, type: 'u16', k: 0.0078125, head: 'Boost Pressure Actual (kPaa)', d: 1, min: 20, max: 600,
+        alt: [{ obd: 0x0B, type: 'u8', k: 1 }] },        // OBD-II PID 0B (intake MAP, kPa abs; 1 byte, saturates at 255), for S58 which refuses 4205
     { key: 'boostTarget', did: 0x4AB0, type: 'u16', k: 0.00390625, head: 'Boost Target (kPaa)', d: 1, min: 20, max: 600 },
-    { key: 'ambient', did: 0x4201, type: 'u16', k: 0.00390625, head: 'Ambient Pressure (kPa)', d: 1, min: 50, max: 120, slow: true },
+    { key: 'ambient', did: 0x4201, type: 'u16', k: 0.00390625, head: 'Ambient Pressure (kPa)', d: 1, min: 50, max: 120, slow: true,
+        alt: [{ obd: 0x33, type: 'u8', k: 1 }] },        // OBD-II PID 33 (barometric pressure, kPa abs), for S58 which refuses 4201
     { key: 'lambda', did: 0x5889, type: 'u16', k: 0.000244140625, head: 'Lambda Actual', d: 3, min: 0.4, max: 2,
         alt: [{ did: 0x5640, type: 'u16', k: 0.00024414 },                     // S58 alternate DID (from IterioDev's cardash catalog)
             { obd: 0x34, type: 'u16', k: 1 / 32768 }] },                       // last resort: OBD-II PID 34 (O2S1 wide-range lambda, first 2 bytes)
