@@ -105,24 +105,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     assert.strictEqual(channels.parse([0x62, 0x42, 0x06, 0, 0], [boost]), null, 'wrong identifier is refused');
     assert.strictEqual(channels.parse([0x7F, 0x22, 0x31], [boost]), null);
     assert(channels.batches(channels.CHANNELS).every((b) => b.length <= 8));
-    // OBD-II fallback for engines (S58) that refuse the B58 DIDs, verified against the owner's MHD values
+    // S58 fallbacks: each tricky channel tries its native DID, then an alternate S58 DID, then OBD-II
     const railR = channels.readers(channels.CHANNELS.find((c) => c.key === 'rail'));
-    assert(railR.length === 2 && railR[0].did === 0x58EF && railR[1].obd === 0x23 && railR[1].did === undefined, 'rail has an OBD fallback');
-    assert.deepStrictEqual(channels.obdRequest([railR[1]]), [0x23]);
-    const rv = channels.obdParse([0x41, 0x23, 0x0D, 0xAC], [railR[1]]);          // 0x0DAC=3500 -> *0.01 = 35.0 MPa
+    assert(railR.length === 3 && railR[0].did === 0x58EF && railR[1].did === 0x5658 && railR[2].obd === 0x23 && railR[2].did === undefined, 'rail: native, S58 DID, OBD');
+    assert.deepStrictEqual(channels.obdRequest([railR[2]]), [0x23]);
+    const rv = channels.obdParse([0x41, 0x23, 0x0D, 0xAC], [railR[2]]);          // 0x0DAC=3500 -> *0.01 = 35.0 MPa
     assert(Math.abs(rv.rail - 35.0) < 0.05, 'rail via OBD ' + rv.rail);
     const ethR = channels.readers(channels.CHANNELS.find((c) => c.key === 'ethanol'))[1];
     const ev = channels.obdParse([0x41, 0x52, 0xBE], [ethR]);                    // 0xBE=190 -> *100/255 = 74.5 %
     assert(ev.ethanol > 73 && ev.ethanol < 76, 'ethanol via OBD ' + ev.ethanol);
     assert.strictEqual(channels.obdParse([0x7F, 0x01, 0x12], [ethR]), null, 'a refused OBD read is null');
-    // coolant via OBD PID 05 (A-40) and lambda via OBD PID 34 (wide-range lambda, first 2 bytes)
-    const coolR = channels.readers(channels.CHANNELS.find((c) => c.key === 'coolant'))[1];
-    assert(coolR.obd === 0x05 && coolR.did === undefined, 'coolant has an OBD fallback');
-    const cv = channels.obdParse([0x41, 0x05, 0x7A], [coolR]);                   // 0x7A=122 -> 122-40 = 82 C
+    // coolant: native 4300, S58 DID 5805, OBD PID 05; lambda: native 5889, S58 DID 5640, OBD PID 34
+    const coolRs = channels.readers(channels.CHANNELS.find((c) => c.key === 'coolant'));
+    assert(coolRs[1].did === 0x5805 && coolRs[2].obd === 0x05, 'coolant: S58 DID then OBD');
+    const cv = channels.obdParse([0x41, 0x05, 0x7A], [coolRs[2]]);               // 0x7A=122 -> 122-40 = 82 C
     assert(cv.coolant === 82, 'coolant via OBD ' + cv.coolant);
-    const lamR = channels.readers(channels.CHANNELS.find((c) => c.key === 'lambda'))[1];
-    assert(lamR.obd === 0x34 && lamR.did === undefined, 'lambda has an OBD fallback');
-    const lv = channels.obdParse([0x41, 0x34, 0x66, 0x66, 0x80, 0x00], [lamR]);  // 0x6666=26214 -> /32768 = 0.800
+    const lamRs = channels.readers(channels.CHANNELS.find((c) => c.key === 'lambda'));
+    assert(lamRs[1].did === 0x5640 && lamRs[2].obd === 0x34, 'lambda: S58 DID then OBD');
+    const lv = channels.obdParse([0x41, 0x34, 0x66, 0x66, 0x80, 0x00], [lamRs[2]]);  // 0x6666=26214 -> /32768 = 0.800
     assert(Math.abs(lv.lambda - 0.800) < 0.005, 'lambda via OBD ' + lv.lambda);
     console.log('ok channels');
 }());

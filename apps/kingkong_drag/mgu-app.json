@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "kingkong_drag",
-  "version": "0.10.8",
+  "version": "0.10.9",
   "tree": "package",
   "internet": true,
   "modules": [

@@ -1,3 +1,7 @@
+## 0.10.9
+
+Verified S58 channel identifiers. Coolant, lambda and rail pressure now also try the alternate BMW DIDs that the newer S58 DME actually answers (coolant 5805, lambda 5640, rail 5658) before dropping to OBD-II. These are the same identifiers the community Car Data app reads on the G8x.
+
 ## 0.10.8
 
 Fixes the slow live rate on the S58. When the DME refuses multi-channel reads, the app now switches to reading one channel at a time immediately instead of waiting out a timeout on every cycle (which had dropped the rate to ~0.3 Hz and blanked the temperatures). Lambda, coolant, oil and charge-air stay up.
