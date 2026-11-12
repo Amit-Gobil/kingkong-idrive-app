@@ -1,3 +1,7 @@
+## 0.12.0
+
+Rebuilt as the KingKong live-data app with Car Data's tab set, our own code and gold/black design: ENGINE, FUEL & AIR, TRANSMISSION, DETAILS, SETTINGS. ENGINE and FUEL & AIR are live (rail/LPFP, lambda + target, boost + target, wastegate, intake/charge-air/ambient, ethanol); Transmission/Details/Settings are placeholders being built next. Drag timer and virtual race move to a separate KingKong Race app.
+
 ## 0.11.0
 
 New ENGINE live view (English, KingKong gold/black), the first tab of the rebuilt live-data UI. Bar gauges with peak markers and redline zones for engine speed, boost, power and torque (power/torque derived from the DME torque channel and rpm), a big speed readout, oil/coolant/intake/battery, and lambda/knock/ethanol. Battery added via OBD PID 42. Next tabs: Fuel & Air, Transmission, Details, Settings.

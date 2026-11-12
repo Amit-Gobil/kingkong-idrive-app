@@ -15,8 +15,9 @@ const SPLITS = [
     { key: 'kmh200', label: '100-200', from: 100, to: 200 },
     { key: 'm201', label: '201 m', dist: 201.168 },
 ];
-const TABS = [['drag', 'DRAG'], ['live', 'ENGINE'], ['map', 'MAP'], ['fel', 'FEL'], ['logg', 'LOGG'], ['race', 'RACE'], ['anpassa', 'ANPASSA']];
-const TAB_X = 760, TAB_W = 302, TAB_H = 100;
+const TABS = [['live', 'ENGINE'], ['fuelair', 'FUEL & AIR'], ['transmission', 'TRANSMISSION'], ['details', 'DETAILS'], ['settings', 'SETTINGS']];
+const LIVE_TABS = ['live', 'fuelair', 'transmission', 'details'];   // tabs that need DME polling
+const TAB_X = 740, TAB_W = 428, TAB_H = 100;
 const STATUS = {
     nosignal: ['INGEN FARTSIGNAL', DIM],
     wait: ['STANNA BILEN', DIM],
@@ -264,6 +265,54 @@ function drawEngine(rec, m) {
     });
 }
 
+function eStatus(rec, m) {
+    rec.roundRect(60, 152, 15, 15, 7, m.running ? GREEN : DIM);
+    const s = m.running ? ('LIVE FROM DME' + (m.hz ? '  ·  ' + m.hz.toFixed(1) + ' Hz' : '')) : 'ENGINE OFF — START THE ENGINE';
+    rec.text(s, 86, 166, 26, DIM, { font: 'mono' });
+}
+function eKv(rec, x, y, label, valStr, col) {
+    rec.text(label, x, y, 28, DIM, { font: 'mono' });
+    rec.text(valStr, x, y + 70, 60, col, { font: 'num' });
+}
+/* ---- FUEL & AIR tab ---- */
+function drawFuelAir(rec, m) {
+    const v = m.values || {};
+    eStatus(rec, m);
+    // LEFT: FUEL
+    const L = 60, LW = 1180;
+    rec.text('FUEL', L, 235, 34, GOLD, { font: 'bold' });
+    eBar(rec, L, 300, LW, 'RAIL PRESSURE', efmt(v.rail, 1), 'MPa (HPFP)', v.rail != null ? v.rail / 40 : null, null, null, GOLD,
+        [{ l: 0, f: 0 }, { l: 10, f: .25 }, { l: 20, f: .5 }, { l: 30, f: .75 }, { l: 40, f: 1 }]);
+    eBar(rec, L, 440, LW, 'LOW-PRESSURE FUEL', efmt(v.lpfp), 'kPa (LPFP)', v.lpfp != null ? v.lpfp / 700 : null, null, null, AMBER,
+        [{ l: 0, f: 0 }, { l: 350, f: .5 }, { l: 700, f: 1 }]);
+    rec.fillRect(L, 560, LW, 1, E_LINE);
+    eKv(rec, L, 620, 'LAMBDA', efmt(v.lambda, 3), GO);
+    eKv(rec, L + 400, 620, 'TARGET', efmt(v.lambdaTarget, 3), WHITE);
+    eKv(rec, L + 800, 620, 'ETHANOL', v.ethanol != null ? efmt(v.ethanol) + '%' : '–', v.ethanol != null ? GO : DIM);
+
+    // RIGHT: AIR
+    rec.fillRect(1440, 150, 1, DESIGN.h - 190, E_LINE);
+    const R = 1500, RW = 1320;
+    rec.text('AIR', R, 235, 34, GOLD, { font: 'bold' });
+    const boost = (v.boost != null && v.ambient != null) ? (v.boost - v.ambient) / 100 : null;
+    const bTarget = (v.boostTarget != null && v.ambient != null) ? (v.boostTarget - v.ambient) / 100 : null;
+    eBar(rec, R, 300, RW, 'BOOST', efmt(boost, 2), 'bar' + (bTarget != null ? '  ·  target ' + efmt(bTarget, 2) : ''), boost != null ? boost / 2.5 : null, bTarget != null ? bTarget / 2.5 : null, 2.2 / 2.5, GO,
+        [{ l: 0, f: 0 }, { l: '1.0', f: .4 }, { l: '2.0', f: .8 }, { l: '2.5', f: 1 }]);
+    eBar(rec, R, 440, RW, 'WASTEGATE', efmt(v.wastegate), '%', v.wastegate != null ? v.wastegate / 100 : null, null, null, GO,
+        [{ l: 0, f: 0 }, { l: 50, f: .5 }, { l: 100, f: 1 }]);
+    rec.fillRect(R, 560, RW, 1, E_LINE);
+    eKv(rec, R, 620, 'INTAKE', efmt(v.iat) + '°C', WHITE);
+    eKv(rec, R + 440, 620, 'CHARGE AIR', efmt(v.chargeAir) + '°C', WHITE);
+    eKv(rec, R + 900, 620, 'AMBIENT', v.ambient != null ? efmt(v.ambient) + ' kPa' : '–', WHITE);
+}
+/* ---- placeholder for tabs not yet rebuilt ---- */
+function drawSoon(rec, m, title, sub) {
+    eStatus(rec, m);
+    rec.text(title, DESIGN.w / 2, 360, 90, GOLD, { font: 'bold', align: 'center' });
+    rec.text('Coming next', DESIGN.w / 2, 440, 44, GO, { font: 'mono', align: 'center' });
+    rec.text(sub, DESIGN.w / 2, 510, 32, DIM, { font: 'mono', align: 'center' });
+}
+
 function drawLive(rec, m) {
     const ids = liveSelection(m).slice(0, LIVE_MAX);
     gridBg(rec, 0, 102, DESIGN.w, DESIGN.h - 102);
@@ -425,13 +474,12 @@ function draw(rec, m) {
     if (m.qr) { drawQr(rec, m); return; }
     rec.blit(logo(), 70, 5);
     rec.fillRect(0, TAB_H, DESIGN.w, 2, GOLD_DIM);
-    if (m.tab === 'drag') drawDrag(rec, m);
     if (m.tab === 'live') drawEngine(rec, m);
-    if (m.tab === 'map') drawMap(rec, m);
-    if (m.tab === 'fel') drawFel(rec, m);
-    if (m.tab === 'logg') drawLogg(rec, m);
-    if (m.tab === 'race') drawRace(rec, m);
-    if (m.tab === 'anpassa') drawAnpassa(rec, m);
+    else if (m.tab === 'fuelair') drawFuelAir(rec, m);
+    else if (m.tab === 'transmission') drawSoon(rec, m, 'TRANSMISSION', 'Gearbox temperatures, clutch and torque (ZF 8HP)');
+    else if (m.tab === 'details') drawSoon(rec, m, 'DETAILS', 'All engine-unit values in groups — ignition per cylinder, injector corrections, VANOS');
+    else if (m.tab === 'settings') drawSoon(rec, m, 'SETTINGS', 'Units, bar ranges and peak reset');
+    else drawEngine(rec, m);
     buttons(m).forEach((b) => drawButton(rec, b));
 }
 

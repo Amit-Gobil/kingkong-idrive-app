@@ -186,7 +186,9 @@ shot('race_tree', m({ tab: 'race', race: { phase: 'count', code: 'KK7Q', lights:
 shot('race_green', m({ tab: 'race', race: { phase: 'armed', lights: { amber: [true, true, true], green: true } } }));
 shot('race_result', m({ tab: 'race', race: { phase: 'result', reaction: 0.19, result: { kmh100: 3.05, m201: 6.84 }, trap: { m201: 231 }, lights: { amber: [], green: false } } }));
 assert.strictEqual(view.hit(m({ tab: 'map' }), 100, 200), 'map:1');
-assert.strictEqual(view.hit(m({ tab: 'map' }), 900, 50), 'tab:drag');
+assert.strictEqual(view.hit(m({ tab: 'map' }), 900, 50), 'tab:live');   // first tab is ENGINE now
+shot('engine', m({ tab: 'live', running: true, hz: 2.4, values: { rpm: 1003, boost: 99, ambient: 101, torque: 15, oil: 78, coolant: 89, chargeAir: 40, lambda: 0.993, knock: 0, battery: 13.9 }, peaks: { rpm: 6420, boost: 1.9, power: 712, torque: 940 } }));
+shot('fuelair', m({ tab: 'fuelair', running: true, hz: 2.4, values: { rail: 12.4, lpfp: 580, lambda: 0.993, lambdaTarget: 1.0, boost: 99, ambient: 101, boostTarget: 100, wastegate: 18, iat: 40, chargeAir: 40 } }));
 assert.strictEqual(view.hit(m({ tab: 'race', race: { phase: 'idle', canStart: true } }), 400, 620), 'race:start');
 shot('anpassa', m({ tab: 'anpassa', clusterOn: false }));
 assert.strictEqual(view.hit(m({ tab: 'anpassa' }), 100, 180), 'cust:ethanol');

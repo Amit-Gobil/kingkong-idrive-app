@@ -81,7 +81,7 @@ class KingKongDrag extends OnlineApp {
         this._visible = false;
         this._drawable = false;
         this._scale = 1;
-        this._tab = 'drag';
+        this._tab = 'live';
         this._speed = 0;
         this._signal = false;
         this._rpm = 0;
@@ -183,7 +183,7 @@ class KingKongDrag extends OnlineApp {
 
     _logWanted() { return !this._lock && (this._settings.autolog || this._manual); }
 
-    _wantDme() { return !this._lock && (this._logWanted() || (this._visible && this._tab === 'live')); }
+    _wantDme() { return !this._lock && (this._logWanted() || (this._visible && ['live', 'fuelair', 'transmission', 'details'].indexOf(this._tab) >= 0)); }
 
     /* Once per start, with the engine running: is this the car the licence was made for? */
     _checkCar() {
