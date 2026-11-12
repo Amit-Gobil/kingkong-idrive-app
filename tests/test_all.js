@@ -127,6 +127,32 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     console.log('ok channels');
 }());
 
+/* ---- poller: a DME that refuses a multi-DID group still gives up each channel read on its own ---- */
+(function pollerGroupFallback() {
+    const { Poller, Bus } = require(path.join(SRC, 'poller.js'));
+    const rpm = channels.CHANNELS.find((c) => c.key === 'rpm');
+    const knock = channels.CHANNELS.find((c) => c.key === 'knock');
+    // answers a single-DID read, refuses anything with more than one DID (the S58 behaviour we hit)
+    const diag = { physical: (ecu, sid, data) => {
+        if (data.length > 2) return Promise.resolve([0x7F, 0x22, 0x31]);
+        const did = (data[0] << 8) | data[1];
+        if (did === rpm.did) return Promise.resolve([0x62, data[0], data[1], 0x17, 0x70]);   // 6000 -> 3000 rpm
+        if (did === knock.did) return Promise.resolve([0x62, data[0], data[1], 0x08]);        // 8 -> -3.0 deg
+        return Promise.resolve([0x7F, 0x22, 0x31]);
+    } };
+    let sample = null;
+    const p = new Poller({ diag, bus: new Bus(), should: () => true, onSample: (v) => { sample = Object.assign({}, v); },
+        log: { info() {}, warn() {} }, now: () => 1000 });
+    rpm.use = require(path.join(SRC, 'channels.js')).readers(rpm)[0];
+    knock.use = require(path.join(SRC, 'channels.js')).readers(knock)[0];
+    p.supported = [rpm, knock];
+    return p._readAll().then(() => {
+        assert(sample && Math.abs(sample.rpm - 3000) < 1 && Math.abs(sample.knock + 3.0) < 0.01,
+            'both channels read individually after the group was refused: ' + JSON.stringify(sample));
+        console.log('ok poller group fallback');
+    });
+}());
+
 /* ---- log folder: a long run is split, the folder limit holds ---- */
 (function logs() {
     const { LogStore } = require(path.join(SRC, 'logstore.js'));

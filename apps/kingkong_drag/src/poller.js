@@ -107,7 +107,16 @@ class Poller {
         for (const group of batches(list.filter((r) => r.obd == null))) {
             if (!this.should()) return;
             const got = parse(await this._ask(group), group);
-            if (got) { Object.assign(this.values, got); answered++; }
+            if (got) { Object.assign(this.values, got); answered++; continue; }
+            // the DME refused the group (one unsupported DID makes it reject the whole request):
+            // read each channel on its own so a single bad DID can't blank the rest of the group
+            if (group.length > 1) {
+                for (const r of group) {
+                    if (!this.should()) return;
+                    const one = parse(await this._ask([r]), [r]);
+                    if (one) { Object.assign(this.values, one); answered++; }
+                }
+            }
         }
         for (const r of list.filter((r) => r.obd != null)) {
             if (!this.should()) return;
