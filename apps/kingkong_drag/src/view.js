@@ -105,6 +105,11 @@ function buttons(m) {
         if (r.phase === 'idle') out.push({ id: 'race:start', x: 80, y: 560, w: 640, h: 140, label: 'STARTA', size: 64, on: !!r.canStart });
         if (r.phase === 'foul' || r.phase === 'result') out.push({ id: 'race:again', x: 1980, y: 560, w: 640, h: 140, label: 'REVANSCH', size: 64, on: true });
     }
+    if (m.tab === 'settings') {
+        out.push({ id: 'log:auto', x: 60, y: 210, w: 880, h: 150, label: m.log && m.log.auto ? 'AUTO-LOG ON' : 'AUTO-LOG OFF', size: 56, on: !!(m.log && m.log.auto) });
+        out.push({ id: 'cluster:toggle', x: 980, y: 210, w: 880, h: 150, label: m.clusterOn ? 'CLUSTER ON' : 'CLUSTER OFF', size: 56, on: !!m.clusterOn });
+        out.push({ id: 'set:peaks', x: 1900, y: 210, w: 920, h: 150, label: 'RESET PEAKS', size: 56 });
+    }
     if (m.tab === 'anpassa') {
         const sel = (m.liveSel && m.liveSel.length) ? m.liveSel : LIVE_DEFAULT;
         const gap = 16, cw = 446, ch = 100;
@@ -331,6 +336,48 @@ function drawDetails(rec, m) {
         });
     });
 }
+/* ---- TRANSMISSION tab: read-only ZF 8HP gearbox data ---- */
+function drawTransmission(rec, m) {
+    const t = m.trans;
+    rec.roundRect(60, 152, 15, 15, 7, (t && t.ok) ? GREEN : DIM);
+    rec.text((t && t.ok) ? 'LIVE FROM GEARBOX  ·  EGS (ZF 8HP)' : 'GEARBOX NOT ANSWERING — IGNITION ON / DRIVING', 86, 166, 26, DIM, { font: 'mono' });
+    if (!t) return;
+    // LEFT: gear hero + program + lock-up
+    const L = 60;
+    rec.text('GEAR', L, 250, 30, DIM, { font: 'mono' });
+    rec.text(t.gear || '–', 400, 500, 300, GOLD, { font: 'num', align: 'center' });
+    rec.text('PROGRAM', L, 600, 30, DIM, { font: 'mono' });
+    rec.text(t.program || '–', L, 668, 60, WHITE, { font: 'num' });
+    rec.text('LOCK-UP', L + 460, 600, 30, DIM, { font: 'mono' });
+    rec.text(t.lockup || '–', L + 460, 668, 54, (t.lockup && t.lockup.indexOf('LOCK') >= 0) ? GO : WHITE, { font: 'num' });
+    // RIGHT: oil temp + rpm tiles + slip
+    rec.fillRect(1270, 150, 1, DESIGN.h - 190, E_LINE);
+    const R = 1310, RW = 1510;
+    eBar(rec, R, 260, RW, 'GEARBOX OIL', efmt(t.oilTemp), '°C', t.oilTemp != null ? t.oilTemp / 150 : null, null, 130 / 150, GO,
+        [{ l: 0, f: 0 }, { l: 50, f: .33 }, { l: 100, f: .66 }, { l: 150, f: 1 }]);
+    rec.fillRect(R, 452, RW, 1, E_LINE);
+    eKv(rec, R, 512, 'INPUT (TURBINE)', t.inputRpm != null ? efmt(t.inputRpm) + ' rpm' : '–', WHITE);
+    eKv(rec, R + 520, 512, 'OUTPUT', t.outputRpm != null ? efmt(t.outputRpm) + ' rpm' : '–', WHITE);
+    eKv(rec, R + 1040, 512, 'ENGINE', t.engineRpm != null ? efmt(t.engineRpm) + ' rpm' : '–', WHITE);
+    eKv(rec, R, 662, 'TORQUE-CONVERTER SLIP', t.slip != null ? efmt(t.slip) + ' rpm' : '–', (t.slip != null && Math.abs(t.slip) > 200) ? AMBER : GO);
+}
+/* ---- SETTINGS tab ---- */
+function drawSettings(rec, m) {
+    rec.text('SETTINGS', 60, 180, 32, GOLD, { font: 'bold' });
+    const info = [
+        ['Car', m.lock ? 'not unlocked' : 'VIN-locked to this car'],
+        ['Channels found', m.found != null ? (m.found + ' / ' + m.total) : '—'],
+        ['Logging', m.log && m.log.active ? 'recording' : (m.log && m.log.auto ? 'auto (idle)' : 'off')],
+        ['Saved logs', m.log ? String(m.log.count) : '—'],
+    ];
+    let y = 470;
+    info.forEach(([k, v]) => {
+        rec.text(k, 60, y, 30, DIM, { font: 'mono' });
+        rec.text(v, 760, y, 30, WHITE, { font: 'mono' });
+        y += 54;
+    });
+    rec.text('KINGKONG  ·  live data from your BMW', 60, 735, 28, GOLD_DIM, { font: 'mono' });
+}
 /* ---- placeholder for tabs not yet rebuilt ---- */
 function drawSoon(rec, m, title, sub) {
     eStatus(rec, m);
@@ -502,9 +549,9 @@ function draw(rec, m) {
     rec.fillRect(0, TAB_H, DESIGN.w, 2, GOLD_DIM);
     if (m.tab === 'live') drawEngine(rec, m);
     else if (m.tab === 'fuelair') drawFuelAir(rec, m);
-    else if (m.tab === 'transmission') drawSoon(rec, m, 'TRANSMISSION', 'Gearbox temperatures, clutch and torque (ZF 8HP)');
+    else if (m.tab === 'transmission') drawTransmission(rec, m);
     else if (m.tab === 'details') drawDetails(rec, m);
-    else if (m.tab === 'settings') drawSoon(rec, m, 'SETTINGS', 'Units, bar ranges and peak reset');
+    else if (m.tab === 'settings') drawSettings(rec, m);
     else drawEngine(rec, m);
     buttons(m).forEach((b) => drawButton(rec, b));
 }

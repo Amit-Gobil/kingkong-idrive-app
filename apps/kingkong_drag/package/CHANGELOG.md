@@ -1,3 +1,7 @@
+## 0.14.0
+
+TRANSMISSION and SETTINGS tabs — the live-data app now has all five. TRANSMISSION reads the ZF 8HP gearbox unit (EGS, read-only): gear, selector, gearbox oil temp, torque-converter lock-up and slip, input/output/engine rpm. SETTINGS: auto-log and cluster toggles, reset peaks, and app/car status. All five tabs (Engine, Fuel & Air, Transmission, Details, Settings) are our own code and gold/black design.
+
 ## 0.13.0
 
 DETAILS tab: the engine unit's values in groups, four columns, exactly the coverage Car Data shows — Engine, Temperatures, Oil, Fuel, Ignition & knock (per cylinder), VANOS and Injector corrections (per cylinder). Read progressively from the DME one identifier at a time ("n of N read"), with "… N more" where a column runs out of room. Identifiers and scalings are the standard engine-unit measurement blocks; the code and design are ours.

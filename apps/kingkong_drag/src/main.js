@@ -23,6 +23,7 @@ const { ECU } = require('./ecus.js');
 const { CHANNELS } = require('./channels.js');
 const { Bus, Poller, DME } = require('./poller.js');
 const { DetailsReader } = require('./details.js');
+const { TransReader } = require('./trans.js');
 const { LogStore } = require('./logstore.js');
 const { hashVin, readLicense, vinFromReply } = require('./license.js');
 const { Uploader } = require('./uploader.js');
@@ -115,6 +116,8 @@ class KingKongDrag extends OnlineApp {
             onSample: (values, now) => { this._trackPeaks(values); this._store.row(now, Object.assign({ speed: this._speed }, values)); } });
         this._details = new DetailsReader({ diag: this._diag, bus: this._bus, log: logger,
             should: () => !this._lock && this._visible && this._tab === 'details' && this._engineRunning() });
+        this._trans = new TransReader({ diag: this._diag, bus: this._bus, log: logger,
+            should: () => !this._lock && this._visible && this._tab === 'transmission' });
         this._timer = new RunTimer(SPLITS, {
             onDone: (run) => this._runDone(run),
             onLaunch: () => { this._peakG = 0; this._newBest = {}; this._qr = null; },
@@ -186,7 +189,7 @@ class KingKongDrag extends OnlineApp {
 
     _logWanted() { return !this._lock && (this._settings.autolog || this._manual); }
 
-    _wantDme() { return !this._lock && (this._logWanted() || (this._visible && ['live', 'fuelair', 'transmission', 'details'].indexOf(this._tab) >= 0)); }
+    _wantDme() { return !this._lock && (this._logWanted() || (this._visible && ['live', 'fuelair', 'details'].indexOf(this._tab) >= 0)); }
 
     /* Once per start, with the engine running: is this the car the licence was made for? */
     _checkCar() {
@@ -379,6 +382,7 @@ class KingKongDrag extends OnlineApp {
         if (id === 'fel:next') this._fel.page = (this._fel.page + 1) % Math.ceil(this._fel.rows.length / 7);
         if (id === 'log:auto') { this._settings.autolog = !this._settings.autolog; writeJson(SETTINGS_FILE, this._settings); this._updateLog(); }
         if (id === 'log:manual') { this._manual = !this._manual; this._updateLog(); }
+        if (id === 'set:peaks') this._peaks = {};
         if (id === 'race:start') { if (this._race.canStart(this._signal, this._speed)) this._race.start(); }
         if (id === 'race:again') this._race.reset();
         if (id === 'cluster:toggle') { this._settings.cluster = !this._settings.cluster; writeJson(SETTINGS_FILE, this._settings); this._applyCluster(); }
@@ -401,6 +405,7 @@ class KingKongDrag extends OnlineApp {
         setInterval(() => { const t = mono(); this._timer.idle(t); this._race.tick(t); this._checkCar(); this._updateLog(); }, 50);
         setInterval(() => { if (!this._lock) this._uploader.tick().then(() => { this._logFiles = this._store.list(); }); }, UPLOAD_EVERY_MS);
         setInterval(() => { if (this._visible && this._tab === 'details') this._details.tick().catch(() => {}); }, 160);
+        setInterval(() => { if (this._visible && this._tab === 'transmission') this._trans.tick().catch(() => {}); }, 200);
         this._watchCar();
         this._poller.start();
         this._applyCluster();   // off by default; drawn on the cluster only when turned on (and after the on-car check)
@@ -544,6 +549,7 @@ class KingKongDrag extends OnlineApp {
             result: t.result, trap: t.trapSpeed, best: this._best, newBest: this._newBest, peakG: this._peakG, canShare: !!this._lastRun,
             running: this._engineRunning(), values: p.values, peaks: this._peaks, hz: p.hz, found: p.supported ? p.supported.length : null, total: CHANNELS.length,
             details: this._tab === 'details' ? this._details.model() : null,
+            trans: this._tab === 'transmission' ? this._trans.model() : null,
             missing: p.supported ? p.missing : [], map: this._map, fel: this._fel,
             log: { auto: this._settings.autolog, manual: this._manual, active: this._store.active, count: this._logFiles.length,
                 bytes: this._logFiles.reduce((n, f) => n + f.size, 0), waiting: this._logFiles.filter((f) => f.name.endsWith('.csv')).length },
