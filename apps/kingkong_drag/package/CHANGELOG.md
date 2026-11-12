@@ -1,3 +1,7 @@
+## 0.14.1
+
+The VIN-lock / activation screen is now in English, so the whole live-data app is English throughout.
+
 ## 0.14.0
 
 TRANSMISSION and SETTINGS tabs — the live-data app now has all five. TRANSMISSION reads the ZF 8HP gearbox unit (EGS, read-only): gear, selector, gearbox oil temp, torque-converter lock-up and slip, input/output/engine rpm. SETTINGS: auto-log and cluster toggles, reset peaks, and app/car status. All five tabs (Engine, Fuel & Air, Transmission, Details, Settings) are our own code and gold/black design.

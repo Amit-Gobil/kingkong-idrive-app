@@ -528,9 +528,9 @@ function drawQr(rec, m) {
 }
 
 const LOCK = {
-    nolicense: ['Appen är inte aktiverad', 'Hämta din egen version på inspect.kingkongtuning.se/car-app'],
-    needvin: ['Starta motorn', 'Appen kontrollerar att den hör till den här bilen.'],
-    wrongcar: ['Fel bil', 'Den här kopian hör till en annan bil. Hämta din egen på inspect.kingkongtuning.se/car-app'],
+    nolicense: ['App not activated', 'Get your own copy at inspect.kingkongtuning.se/car-app'],
+    needvin: ['Start the engine', 'The app is checking that it belongs to this car.'],
+    wrongcar: ['Wrong car', 'This copy belongs to another car. Get your own at inspect.kingkongtuning.se/car-app'],
 };
 
 function drawLock(rec, m) {
