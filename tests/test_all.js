@@ -149,6 +149,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return p._readAll().then(() => {
         assert(sample && Math.abs(sample.rpm - 3000) < 1 && Math.abs(sample.knock + 3.0) < 0.01,
             'both channels read individually after the group was refused: ' + JSON.stringify(sample));
+        assert(p.noBatch === true, 'the poller switched to single reads so it stops paying the group timeout');
         console.log('ok poller group fallback');
     });
 }());

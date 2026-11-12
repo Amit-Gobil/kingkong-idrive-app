@@ -50,6 +50,7 @@ class Poller {
         this.stopped = false;
         this.fails = 0;
         this.cycle = 0;
+        this.noBatch = false;   // set once we learn the DME refuses multi-DID reads (e.g. the S58), so we stop paying the group timeout
     }
 
     start() { this._loop().catch((e) => this.log.warn('poller: ' + (e && e.message))); }
@@ -104,13 +105,16 @@ class Poller {
         this.cycle++;
         const list = this.supported.filter((c) => !c.slow || slowTurn).map((c) => c.use);
         let answered = 0;
-        for (const group of batches(list.filter((r) => r.obd == null))) {
+        const uds = list.filter((r) => r.obd == null);
+        // some DMEs (the S58) refuse a multi-DID request; once we see that, read one at a time so we
+        // never pay the group timeout again (that was dragging the rate down to ~0.3 Hz)
+        const groups = this.noBatch ? uds.map((r) => [r]) : batches(uds);
+        for (const group of groups) {
             if (!this.should()) return;
             const got = parse(await this._ask(group), group);
             if (got) { Object.assign(this.values, got); answered++; continue; }
-            // the DME refused the group (one unsupported DID makes it reject the whole request):
-            // read each channel on its own so a single bad DID can't blank the rest of the group
             if (group.length > 1) {
+                this.noBatch = true;    // the group was refused: switch to single reads from now on
                 for (const r of group) {
                     if (!this.should()) return;
                     const one = parse(await this._ask([r]), [r]);
