@@ -71,4 +71,43 @@ function drawTheme(rec, m, o) {
     rec.text('KINGKONG', 60, H - 30, 32, GOLD_DIM, { font: 'mono' });
 }
 
-module.exports = { drawTheme };
+/**
+ * iDrive 8 has no full-panel target: the cluster keeps its own gauges and only offers a window in
+ * the middle (`map`, 874x749) or a widget canvas. So instead of a whole-panel dash we draw a
+ * compact KingKong centre panel with the values BMW doesn't show. Responsive to o.w / o.h so the
+ * same code fits the map window and a widget region. Model: { rpm, speed, gear, boost, oil,
+ * coolant, knock, ethanol }.
+ */
+function drawThemeId8(rec, m, o) {
+    const W = o.w, H = o.h, red = o.redline || 7000;
+    const mg = Math.round(W * 0.03), gap = Math.round(W * 0.025);
+    rec.clear([0, 0, 0, 0]);
+
+    // rev bar across the top of the window
+    const rbH = Math.max(20, Math.round(H * 0.05));
+    revBar(rec, mg, Math.round(H * 0.03), W - 2 * mg, rbH, m.rpm, red);
+
+    // gear + speed, centred (the OEM rpm/speed gauges flank the window, so no arc needed)
+    const cx = Math.round(W / 2), over = typeof m.rpm === 'number' && m.rpm >= red;
+    const gearY = Math.round(H * 0.30), gSize = Math.round(H * 0.20);
+    const gear = (m.gear != null && m.gear >= 1 && m.gear <= 12) ? String(m.gear) : (m.gear === 0 ? 'N' : '–');
+    glow(rec, gear, cx, gearY, gSize, over ? RED : GO, { font: 'num', align: 'center' });
+    rec.text('VÄXEL', cx, gearY + Math.round(gSize * 0.26), Math.round(H * 0.035), DIM, { font: 'mono', align: 'center' });
+    rec.text(num(m.speed), cx, gearY + Math.round(gSize * 0.70), Math.round(H * 0.10), WHITE, { font: 'num', align: 'center' });
+    rec.text('KM/H', cx, gearY + Math.round(gSize * 0.90), Math.round(H * 0.032), DIM, { font: 'mono', align: 'center' });
+
+    // readout tiles, 2 columns, in the lower part of the window
+    const tw = Math.round((W - 2 * mg - gap) / 2), th = Math.round(H * 0.15);
+    const col2 = W - mg - tw, rowY = (i) => Math.round(H * 0.52) + i * (th + gap);
+    const boost = (typeof m.boost === 'number' ? (m.boost / 100).toFixed(2) : '–');
+    const knockRed = (typeof m.knock === 'number' && m.knock <= -1);
+    tile(rec, mg, rowY(0), tw, th, 'Boost', boost, 'BAR', GO);
+    tile(rec, col2, rowY(0), tw, th, 'Knock', num(m.knock, 1) + '', '°', knockRed ? RED : GO);
+    tile(rec, mg, rowY(1), tw, th, 'Olja', num(m.oil) + '', '°C', GO);
+    tile(rec, col2, rowY(1), tw, th, 'Kyl', num(m.coolant) + '', '°C', GO);
+    tile(rec, mg, rowY(2), W - 2 * mg, th, 'Etanol', num(m.ethanol) + '', '%', GO);
+
+    rec.text('KINGKONG', cx, Math.round(H * 0.485), Math.round(H * 0.03), GOLD_DIM, { font: 'mono', align: 'center' });
+}
+
+module.exports = { drawTheme, drawThemeId8 };

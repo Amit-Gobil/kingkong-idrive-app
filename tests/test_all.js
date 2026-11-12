@@ -53,27 +53,45 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     console.log('ok race');
 }());
 
-/* ---- cluster theme: more rev-bar lit near the redline, and a full-panel RGBA frame goes out ---- */
+/* ---- cluster theme: rev bar fills toward the redline, and the right target/frame per generation ---- */
 (function cluster() {
-    const { KingKongCluster, drawTheme, DEFAULTS } = require(path.join(SRC, 'cluster.js'));
-    const o = DEFAULTS;
-    const litBar = (model) => {
-        const rec = new kit.Recorder(o.w, o.h, { textScale: 1 });
-        drawTheme(rec, model, o);
-        const cv = new Canvas(o.w, o.h); kit.play(rec.words(), cv);
-        let lit = 0; for (let y = 24; y < 58; y++) for (let x = 0; x < o.w; x++) { const i = (y * o.w + x) * 4; if (cv.d[i] > 60 || cv.d[i + 1] > 60) lit++; }
-        return lit;
-    };
-    assert(litBar({ rpm: 1500, gear: 3 }) < litBar({ rpm: 6900, gear: 4 }), 'the rev bar fills toward the redline');
+    const { KingKongCluster, drawTheme, drawThemeId8, TARGETS } = require(path.join(SRC, 'cluster.js'));
+    // rev bar lights up toward the redline, on both the full panel (ID7) and the ID8 window
+    [[drawTheme, TARGETS.panel], [drawThemeId8, TARGETS.map]].forEach(([draw, g]) => {
+        const o = { w: g.w, h: g.h, redline: 7000 };
+        const litBar = (model) => {
+            const rec = new kit.Recorder(o.w, o.h, { textScale: 1 });
+            draw(rec, model, o);
+            const cv = new Canvas(o.w, o.h); kit.play(rec.words(), cv);
+            let lit = 0, y1 = Math.round(o.h * 0.10);
+            for (let y = 0; y < y1; y++) for (let x = 0; x < o.w; x++) { const i = (y * o.w + x) * 4; if (cv.d[i] > 60 || cv.d[i + 1] > 60) lit++; }
+            return lit;
+        };
+        assert(litBar({ rpm: 1500, gear: 3 }) < litBar({ rpm: 6900, gear: 4 }), 'the rev bar fills toward the redline');
+    });
 
-    const calls = { image: 0, connect: 0, pixels: [] };
-    const stub = { image: () => { calls.image++; return 7; }, on: function (ev, fn) { this['_' + ev] = fn; return this; },
-        connect: () => { calls.connect++; }, pixels: (ref, rects, buf) => calls.pixels.push({ ref, len: buf.length }), set() {}, close() {} };
-    const c = new KingKongCluster({ make: () => stub, get: () => ({ rpm: 7000, speed: 120, gear: 5, boost: 150, knock: -2, oil: 100, coolant: 95, ethanol: 70 }) });
-    c.start();
-    assert.strictEqual(calls.image, 1, 'one image layer'); assert.strictEqual(calls.connect, 1, 'connects');
-    stub._ready();
-    assert(calls.pixels.length >= 1 && calls.pixels[0].ref === 7 && calls.pixels[0].len === o.w * o.h * 4, 'pushes a full-panel RGBA frame');
+    // make a stub that reports a given set of targets and records the image layer it was asked for
+    const run = (targets) => {
+        const calls = { image: [], pixels: [] };
+        const stub = { targets, image: (o) => { calls.image.push(o); return 7; }, on: function (ev, fn) { this['_' + ev] = fn; return this; },
+            connect() {}, pixels: (ref, rects, buf) => calls.pixels.push({ ref, len: buf.length }), set() {}, close() {} };
+        const c = new KingKongCluster({ make: () => stub, get: () => ({ rpm: 7000, speed: 120, gear: 5, boost: 150, knock: -2, oil: 100, coolant: 95, ethanol: 70 }) });
+        c.start(); stub._ready();
+        return { c, calls };
+    };
+
+    // iDrive 7 offers 'panel' -> we take it and push a full 1920x720 frame
+    const id7 = run('map,panel,hud');
+    assert.strictEqual(id7.c.target, 'panel', 'iDrive 7: draws on the whole panel');
+    assert.strictEqual(id7.calls.image.length, 1, 'one image layer');
+    assert(id7.calls.pixels[0].ref === 7 && id7.calls.pixels[0].len === TARGETS.panel.w * TARGETS.panel.h * 4, 'pushes a full-panel frame');
+
+    // iDrive 8 has no 'panel' -> we fall back to the 'map' window (874x749)
+    const id8 = run('map,hud,guide,widget');
+    assert.strictEqual(id8.c.target, 'map', 'iDrive 8: draws on the centre map window, not panel');
+    assert(id8.calls.image[0].w === TARGETS.map.w && id8.calls.image[0].h === TARGETS.map.h, 'the map layer is the verified ID8 size');
+    assert(id8.calls.pixels[0].len === TARGETS.map.w * TARGETS.map.h * 4, 'pushes a map-sized frame');
+
     console.log('ok cluster');
 }());
 
