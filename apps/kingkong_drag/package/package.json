@@ -1,7 +1,7 @@
 {
   "name": "kingkong_drag",
-  "version": "0.14.3",
-  "description": "KingKong Tuning: drag timer, live data, MHD map switch, fault codes and automatic logging",
+  "version": "1.0.0",
+  "description": "KingKong \u2014 live engine and gearbox data for your BMW on the iDrive screen",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {
@@ -42,5 +42,5 @@
     "ID7",
     "ID8"
   ],
-  "mguInternet": true
+  "mguInternet": false
 }
