@@ -1,6 +1,6 @@
 {
   "name": "kingkong_drag",
-  "version": "0.10.5",
+  "version": "0.10.6",
   "description": "KingKong Tuning: drag timer, live data, MHD map switch, fault codes and automatic logging",
   "private": false,
   "main": "javascript/runner.js",

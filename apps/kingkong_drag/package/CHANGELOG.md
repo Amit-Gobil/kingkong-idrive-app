@@ -1,3 +1,7 @@
+## 0.10.6
+
+More S58 channels. Coolant (OBD PID 05) and lambda (OBD PID 34) now fall back to the standard OBD-II reads when the car refuses the BMW DIDs, the same way rail pressure and ethanol already did. Fixes blank Kylvatten/Lambda on the G8x S58.
+
 ## 0.10.5
 
 iDrive 8 cluster support. The cluster theme now reads the targets the car offers: on iDrive 7 it draws the full panel as before; on iDrive 8 (no full-panel target) it draws a KingKong centre panel in the map window (gear, speed, boost, knock, oil, coolant, ethanol) while BMW's own gauges stay.

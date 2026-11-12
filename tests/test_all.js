@@ -115,6 +115,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const ev = channels.obdParse([0x41, 0x52, 0xBE], [ethR]);                    // 0xBE=190 -> *100/255 = 74.5 %
     assert(ev.ethanol > 73 && ev.ethanol < 76, 'ethanol via OBD ' + ev.ethanol);
     assert.strictEqual(channels.obdParse([0x7F, 0x01, 0x12], [ethR]), null, 'a refused OBD read is null');
+    // coolant via OBD PID 05 (A-40) and lambda via OBD PID 34 (wide-range lambda, first 2 bytes)
+    const coolR = channels.readers(channels.CHANNELS.find((c) => c.key === 'coolant'))[1];
+    assert(coolR.obd === 0x05 && coolR.did === undefined, 'coolant has an OBD fallback');
+    const cv = channels.obdParse([0x41, 0x05, 0x7A], [coolR]);                   // 0x7A=122 -> 122-40 = 82 C
+    assert(cv.coolant === 82, 'coolant via OBD ' + cv.coolant);
+    const lamR = channels.readers(channels.CHANNELS.find((c) => c.key === 'lambda'))[1];
+    assert(lamR.obd === 0x34 && lamR.did === undefined, 'lambda has an OBD fallback');
+    const lv = channels.obdParse([0x41, 0x34, 0x66, 0x66, 0x80, 0x00], [lamR]);  // 0x6666=26214 -> /32768 = 0.800
+    assert(Math.abs(lv.lambda - 0.800) < 0.005, 'lambda via OBD ' + lv.lambda);
     console.log('ok channels');
 }());
 
@@ -168,7 +177,7 @@ function dmeReply(target, sid, d) {
         const out = [0x62];
         for (let i = 0; i < d.length; i += 2) {
             const ch = channels.CHANNELS.find((c) => c.did === (d[i] << 8 | d[i + 1]));
-            if (!ch || ch.key === 'wastegate' || ch.key === 'rail' || ch.key === 'ethanol') return [0x7F, 0x22, 0x31]; // S58: BMW DIDs for rail/ethanol refused -> OBD fallback
+            if (!ch || ['wastegate', 'rail', 'ethanol', 'coolant', 'lambda'].indexOf(ch.key) >= 0) return [0x7F, 0x22, 0x31]; // S58: these BMW DIDs refused -> OBD fallback
 
             out.push(d[i], d[i + 1]);
             const n = ch.type.endsWith('16') ? 2 : 1;
@@ -177,9 +186,11 @@ function dmeReply(target, sid, d) {
         }
         return out;
     }
-    if (sid === 0x01) {   // OBD-II service 01: rail (PID 23) and ethanol (PID 52)
+    if (sid === 0x01) {   // OBD-II service 01: rail (23), ethanol (52), coolant (05), lambda (34)
         if (d[0] === 0x23) return [0x41, 0x23, 0x0D, 0xAC];   // 3500 -> 35.0 MPa
         if (d[0] === 0x52) return [0x41, 0x52, 0xBE];          // 190 -> 74.5 %
+        if (d[0] === 0x05) return [0x41, 0x05, 0x7A];          // 122 -> 82 C
+        if (d[0] === 0x34) return [0x41, 0x34, 0x66, 0x66, 0x80, 0x00];  // 26214 -> lambda 0.800
         return [0x7F, 0x01, 0x12];
     }
     if (sid === 0x2F) return dmeMap === 'mhd' ? [0x6F].concat(d) : [0x7F, 0x2F, 0x31];
