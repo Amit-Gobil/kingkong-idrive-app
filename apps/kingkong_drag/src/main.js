@@ -112,10 +112,13 @@ class KingKongDrag extends OnlineApp {
         this._logFiles = this._store.list();
         this._uploader = new Uploader({ store: this._store, token: this._license && this._license.token, leaseFile: path.join(DATA_DIR, 'uplink.json'), log: logger });
         this._poller = new Poller({ diag: this._diag, bus: this._bus, log: logger, now: mono,
-            should: () => this._wantDme() && this._engineRunning(),
+            // Read whenever a live tab is open (like Car Data) — don't gate the display on the engine-running
+            // signal, which can be gappy. Keep the engine-running guard only for background auto-logging, so
+            // the app never talks to the DME while someone is flashing with MHD/ISTA (app not in foreground).
+            should: () => !this._lock && ((this._visible && ['live', 'fuelair', 'details'].indexOf(this._tab) >= 0) || (this._logWanted() && this._engineRunning())),
             onSample: (values, now) => { this._trackPeaks(values); this._store.row(now, Object.assign({ speed: this._speed }, values)); } });
         this._details = new DetailsReader({ diag: this._diag, bus: this._bus, log: logger,
-            should: () => !this._lock && this._visible && this._tab === 'details' && this._engineRunning() });
+            should: () => !this._lock && this._visible && this._tab === 'details' });
         this._trans = new TransReader({ diag: this._diag, bus: this._bus, log: logger,
             should: () => !this._lock && this._visible && this._tab === 'transmission' });
         this._timer = new RunTimer(SPLITS, {

@@ -1,3 +1,7 @@
+## 0.14.2
+
+Fix: live values stayed blank on some cars. The app only read the DME while it detected the engine running through a vehicle signal that can be gappy on iDrive 8, which blanked Engine/Fuel & Air/Details. It now reads whenever a live tab is open (the engine-running guard is kept only for background auto-logging, so it still never talks to the DME during an MHD/ISTA flash). The status line shows green "LIVE · n Hz" when data is actually flowing.
+
 ## 0.14.1
 
 The VIN-lock / activation screen is now in English, so the whole live-data app is English throughout.

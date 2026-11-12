@@ -217,9 +217,7 @@ function eBar(rec, x, y, w, label, valStr, unit, frac, peak, redStart, col, tick
 }
 function drawEngine(rec, m) {
     const v = m.values || {}, pk = m.peaks || {};
-    rec.roundRect(60, 152, 15, 15, 7, m.running ? GREEN : DIM);
-    const status = m.running ? ('LIVE FROM DME' + (m.hz ? '  ·  ' + m.hz.toFixed(1) + ' Hz' : '')) : 'ENGINE OFF — START THE ENGINE';
-    rec.text(status, 86, 166, 26, DIM, { font: 'mono' });
+    eStatus(rec, m);
 
     const rpm = v.rpm, boost = (v.boost != null && v.ambient != null) ? (v.boost - v.ambient) / 100 : null;
     const tq = v.torque, power = (tq != null && rpm != null) ? tq * rpm / 9549 * 1.341 : null;
@@ -271,8 +269,9 @@ function drawEngine(rec, m) {
 }
 
 function eStatus(rec, m) {
-    rec.roundRect(60, 152, 15, 15, 7, m.running ? GREEN : DIM);
-    const s = m.running ? ('LIVE FROM DME' + (m.hz ? '  ·  ' + m.hz.toFixed(1) + ' Hz' : '')) : 'ENGINE OFF — START THE ENGINE';
+    const live = m.hz > 0;
+    rec.roundRect(60, 152, 15, 15, 7, live ? GREEN : DIM);
+    const s = live ? ('LIVE FROM DME  ·  ' + m.hz.toFixed(1) + ' Hz') : 'WAITING FOR DATA…  ·  start the engine';
     rec.text(s, 86, 166, 26, DIM, { font: 'mono' });
 }
 function eKv(rec, x, y, label, valStr, col) {
@@ -313,8 +312,9 @@ function drawFuelAir(rec, m) {
 /* ---- DETAILS tab: the engine unit's values in groups, four columns ---- */
 function drawDetails(rec, m) {
     const det = m.details;
-    rec.roundRect(60, 152, 15, 15, 7, m.running ? GREEN : DIM);
-    rec.text(det ? ('ENGINE UNIT VALUES  ·  ' + det.read + ' of ' + det.of + ' read') : (m.running ? 'Reading the engine unit…' : 'ENGINE OFF — START THE ENGINE'),
+    const reading = det && det.read > 0;
+    rec.roundRect(60, 152, 15, 15, 7, reading ? GREEN : DIM);
+    rec.text(det ? ('ENGINE UNIT VALUES  ·  ' + det.read + ' of ' + det.of + ' read') : 'Reading the engine unit… · start the engine',
         86, 166, 26, DIM, { font: 'mono' });
     if (!det) return;
     const byGroup = {}; det.groups.forEach((g) => { byGroup[g.group] = g.rows; });
