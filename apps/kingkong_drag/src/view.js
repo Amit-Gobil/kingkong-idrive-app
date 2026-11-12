@@ -15,7 +15,7 @@ const SPLITS = [
     { key: 'kmh200', label: '100-200', from: 100, to: 200 },
     { key: 'm201', label: '201 m', dist: 201.168 },
 ];
-const TABS = [['drag', 'DRAG'], ['live', 'LIVE'], ['map', 'MAP'], ['fel', 'FEL'], ['logg', 'LOGG'], ['race', 'RACE'], ['anpassa', 'ANPASSA']];
+const TABS = [['drag', 'DRAG'], ['live', 'ENGINE'], ['map', 'MAP'], ['fel', 'FEL'], ['logg', 'LOGG'], ['race', 'RACE'], ['anpassa', 'ANPASSA']];
 const TAB_X = 760, TAB_W = 302, TAB_H = 100;
 const STATUS = {
     nosignal: ['INGEN FARTSIGNAL', DIM],
@@ -194,6 +194,76 @@ function neonPanel(rec, x, y, w, h, cut) {
     rec.line(x + w - cut, y + h, x + w, y + h - cut, wd, GOLD);
 }
 
+/* ---- ENGINE tab: clean bar-gauge live view (KingKong gold/black, English) ---- */
+const E_TRACK = '#201c12', E_RED = '#3a140f', E_LINE = '#1d1a12';
+const eClamp = (f) => Math.max(0, Math.min(1, f));
+function efmt(v, d) { return (typeof v !== 'number' || !isFinite(v)) ? '–' : v.toFixed(d || 0); }
+function eBar(rec, x, y, w, label, valStr, unit, frac, peak, redStart, col, ticks) {
+    rec.text(label, x, y, 30, DIM, { font: 'mono' });
+    rec.text(unit, x, y + 32, 24, '#6b6450', { font: 'mono' });
+    rec.text(valStr, x + w, y + 10, 72, col, { font: 'num', align: 'right' });
+    const h = 18, by = y + 62;
+    rec.roundRect(x, by, w, h, h / 2, E_TRACK);
+    if (redStart != null && redStart < 1) rec.roundRect(x + w * redStart, by, w * (1 - redStart), h, h / 2, E_RED);
+    if (typeof frac === 'number' && isFinite(frac)) rec.roundRect(x, by, Math.max(h, w * eClamp(frac)), h, h / 2, frac >= (redStart || 1) ? BAD : col);
+    if (peak != null) rec.fillRect(x + w * eClamp(peak) - 2, by - 7, 4, h + 14, WHITE);
+    if (ticks) ticks.forEach((t) => rec.text(String(t.l), x + w * t.f, by + h + 32, 22, '#544d3a', { font: 'mono', align: 'center' }));
+}
+function drawEngine(rec, m) {
+    const v = m.values || {}, pk = m.peaks || {};
+    rec.roundRect(60, 152, 15, 15, 7, m.running ? GREEN : DIM);
+    const status = m.running ? ('LIVE FROM DME' + (m.hz ? '  ·  ' + m.hz.toFixed(1) + ' Hz' : '')) : 'ENGINE OFF — START THE ENGINE';
+    rec.text(status, 86, 166, 26, DIM, { font: 'mono' });
+
+    const rpm = v.rpm, boost = (v.boost != null && v.ambient != null) ? (v.boost - v.ambient) / 100 : null;
+    const tq = v.torque, power = (tq != null && rpm != null) ? tq * rpm / 9549 * 1.341 : null;
+    const intake = (v.chargeAir != null ? v.chargeAir : v.iat);
+    const pkBoost = (pk.boost != null && pk.boost > 0) ? ' · peak ' + efmt(pk.boost, 2) : '';
+    const pkRpm = pk.rpm ? ' · peak ' + efmt(pk.rpm) : '';
+    const pkPwr = pk.power ? ' · peak ' + efmt(pk.power) : '';
+    const pkTq = pk.torque ? ' · peak ' + efmt(pk.torque) : '';
+
+    // LEFT: rpm + boost + temperatures
+    const L = 60, LW = 1180;
+    eBar(rec, L, 210, LW, 'ENGINE SPEED', efmt(rpm), 'rpm' + pkRpm, rpm != null ? rpm / 8000 : null, pk.rpm ? pk.rpm / 8000 : null, 7000 / 8000, GOLD,
+        [{ l: 0, f: 0 }, { l: 2, f: .25 }, { l: 4, f: .5 }, { l: 6, f: .75 }, { l: 8, f: 1 }]);
+    eBar(rec, L, 370, LW, 'BOOST', efmt(boost, 2), 'bar' + pkBoost, boost != null ? boost / 2.5 : null, pk.boost ? pk.boost / 2.5 : null, 2.2 / 2.5, AMBER,
+        [{ l: 0, f: 0 }, { l: '1.0', f: .4 }, { l: '2.0', f: .8 }, { l: '2.5', f: 1 }]);
+    rec.fillRect(L, 520, LW, 1, E_LINE);
+    const temps = [['OIL', v.oil, '°C', 150, BAD], ['COOLANT', v.coolant, '°C', 130, '#5aa9e8'],
+        ['INTAKE', intake, '°C', 90, AMBER], ['BATTERY', v.battery, 'V', 15, GREEN]];
+    temps.forEach(([lab, val, u, max, c], i) => {
+        const x = L + i * 300, d = (u === 'V') ? 1 : 0;
+        rec.text(lab, x, 580, 28, DIM, { font: 'mono' });
+        rec.text(efmt(val, d), x, 646, 60, WHITE, { font: 'num' });
+        rec.text(u, x + 150, 646, 28, DIM, { font: 'mono' });
+        rec.roundRect(x, 672, 250, 8, 4, E_TRACK);
+        if (typeof val === 'number') rec.roundRect(x, 672, 250 * eClamp(val / max), 8, 4, c);
+    });
+
+    // MIDDLE: speed hero
+    rec.fillRect(1270, 150, 1, DESIGN.h - 190, E_LINE);
+    const M = 1310, MW = 540;
+    rec.text('SPEED', M, 210, 30, DIM, { font: 'mono' });
+    rec.text(efmt(m.speed), M + MW / 2, 440, 300, WHITE, { font: 'num', align: 'center' });
+    rec.text('km/h', M + MW / 2, 510, 44, DIM, { font: 'mono', align: 'center' });
+
+    // RIGHT: power + torque + lambda/knock/ethanol
+    rec.fillRect(1880, 150, 1, DESIGN.h - 190, E_LINE);
+    const R = 1930, RW = 890;
+    eBar(rec, R, 210, RW, 'POWER', efmt(power), 'hp' + pkPwr, power != null ? power / 800 : null, pk.power ? pk.power / 800 : null, null, GO,
+        [{ l: 0, f: 0 }, { l: 200, f: .25 }, { l: 400, f: .5 }, { l: 600, f: .75 }, { l: 800, f: 1 }]);
+    eBar(rec, R, 370, RW, 'TORQUE', efmt(tq), 'Nm' + pkTq, tq != null ? tq / 1000 : null, pk.torque ? pk.torque / 1000 : null, null, GO,
+        [{ l: 0, f: 0 }, { l: 250, f: .25 }, { l: 500, f: .5 }, { l: 750, f: .75 }, { l: 1000, f: 1 }]);
+    rec.fillRect(R, 520, RW, 1, E_LINE);
+    const kv = [['LAMBDA', efmt(v.lambda, 3), GO], ['KNOCK', efmt(v.knock, 1) + '°', GO], ['ETHANOL', v.ethanol != null ? efmt(v.ethanol) + '%' : '–', v.ethanol != null ? GO : DIM]];
+    kv.forEach(([lab, val, c], i) => {
+        const x = R + i * 300;
+        rec.text(lab, x, 580, 28, DIM, { font: 'mono' });
+        rec.text(val, x, 650, 60, c, { font: 'num' });
+    });
+}
+
 function drawLive(rec, m) {
     const ids = liveSelection(m).slice(0, LIVE_MAX);
     gridBg(rec, 0, 102, DESIGN.w, DESIGN.h - 102);
@@ -356,7 +426,7 @@ function draw(rec, m) {
     rec.blit(logo(), 70, 5);
     rec.fillRect(0, TAB_H, DESIGN.w, 2, GOLD_DIM);
     if (m.tab === 'drag') drawDrag(rec, m);
-    if (m.tab === 'live') drawLive(rec, m);
+    if (m.tab === 'live') drawEngine(rec, m);
     if (m.tab === 'map') drawMap(rec, m);
     if (m.tab === 'fel') drawFel(rec, m);
     if (m.tab === 'logg') drawLogg(rec, m);

@@ -1,3 +1,7 @@
+## 0.11.0
+
+New ENGINE live view (English, KingKong gold/black), the first tab of the rebuilt live-data UI. Bar gauges with peak markers and redline zones for engine speed, boost, power and torque (power/torque derived from the DME torque channel and rpm), a big speed readout, oil/coolant/intake/battery, and lambda/knock/ethanol. Battery added via OBD PID 42. Next tabs: Fuel & Air, Transmission, Details, Settings.
+
 ## 0.10.9
 
 Verified S58 channel identifiers. Coolant, lambda and rail pressure now also try the alternate BMW DIDs that the newer S58 DME actually answers (coolant 5805, lambda 5640, rail 5658) before dropping to OBD-II. These are the same identifiers the community Car Data app reads on the G8x.

@@ -36,6 +36,7 @@ const CHANNELS = [
     { key: 'coolant', did: 0x4300, type: 's16', k: 0.1, o: -273.14, head: 'Coolant Temp (C)', d: 0, min: -45, max: 200, slow: true,
         alt: [{ did: 0x5805, type: 's16', k: 0.1, o: -273.14 },                 // S58 alternate DID
             { obd: 0x05, type: 'u8', k: 1, o: -40 }] },                         // last resort: OBD-II PID 05 (coolant temp, A-40)
+    { key: 'battery', obd: 0x42, type: 'u16', k: 0.001, head: 'Battery (V)', d: 1, min: 6, max: 16, slow: true },   // OBD-II PID 42: control-module voltage ((A*256+B)/1000)
     { key: 'ethanol', did: 0x550D, type: 'u8', k: 0.39215686, head: 'Ethanol Content (%)', d: 0, min: 0, max: 100, slow: true,
         alt: [{ obd: 0x52, type: 'u8', k: 100 / 255, min: 0, max: 100 }] },   // OBD-II PID 52 (ethanol %), for engines that refuse 550D (e.g. S58)
 ];

@@ -87,6 +87,7 @@ class KingKongDrag extends OnlineApp {
         this._rpm = 0;
         this._rpmAt = 0;
         this._peakG = 0;
+        this._peaks = {};       // session peaks for the ENGINE tab (rpm, boost, power, torque, speed)
         this._newBest = {};
         this._qr = null;
         this._touch = null;
@@ -110,7 +111,7 @@ class KingKongDrag extends OnlineApp {
         this._uploader = new Uploader({ store: this._store, token: this._license && this._license.token, leaseFile: path.join(DATA_DIR, 'uplink.json'), log: logger });
         this._poller = new Poller({ diag: this._diag, bus: this._bus, log: logger, now: mono,
             should: () => this._wantDme() && this._engineRunning(),
-            onSample: (values, now) => this._store.row(now, Object.assign({ speed: this._speed }, values)) });
+            onSample: (values, now) => { this._trackPeaks(values); this._store.row(now, Object.assign({ speed: this._speed }, values)); } });
         this._timer = new RunTimer(SPLITS, {
             onDone: (run) => this._runDone(run),
             onLaunch: () => { this._peakG = 0; this._newBest = {}; this._qr = null; },
@@ -523,11 +524,21 @@ class KingKongDrag extends OnlineApp {
         }
     }
 
+    /* Session peaks for the ENGINE tab. Power/torque are derived from the DME torque channel and rpm. */
+    _trackPeaks(v) {
+        const pk = this._peaks, mx = (k, val) => { if (typeof val === 'number' && isFinite(val) && (pk[k] == null || val > pk[k])) pk[k] = val; };
+        mx('rpm', v.rpm);
+        if (v.boost != null && v.ambient != null) mx('boost', (v.boost - v.ambient) / 100);
+        mx('torque', v.torque);
+        if (v.torque != null && v.rpm != null) mx('power', v.torque * v.rpm / 9549 * 1.341);
+        if (typeof this._speed === 'number') mx('speed', this._speed);
+    }
+
     _model() {
         const t = this._timer, p = this._poller;
         return { lock: this._lock, tab: this._tab, qr: this._qr, state: t.state, elapsed: t.elapsed(mono()), speed: this._speed, signal: this._signal,
             result: t.result, trap: t.trapSpeed, best: this._best, newBest: this._newBest, peakG: this._peakG, canShare: !!this._lastRun,
-            running: this._engineRunning(), values: p.values, hz: p.hz, found: p.supported ? p.supported.length : null, total: CHANNELS.length,
+            running: this._engineRunning(), values: p.values, peaks: this._peaks, hz: p.hz, found: p.supported ? p.supported.length : null, total: CHANNELS.length,
             missing: p.supported ? p.missing : [], map: this._map, fel: this._fel,
             log: { auto: this._settings.autolog, manual: this._manual, active: this._store.active, count: this._logFiles.length,
                 bytes: this._logFiles.reduce((n, f) => n + f.size, 0), waiting: this._logFiles.filter((f) => f.name.endsWith('.csv')).length },
