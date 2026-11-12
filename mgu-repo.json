@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "components": [
+    { "id": "kingkong_drag", "kind": "app", "path": "apps/kingkong_drag", "build": "unit",
+      "title": "KingKong", "description": "Dragtimer, livedata, mapswitch (MHD), felkoder och autologg",
+      "requires": { "mgu-render": "0.6.10", "mgu-deploy": "0.7.5", "cluster-render": "0.5.5" }, "mguHmi": ["ID7", "ID8"] }
+  ]
+}

@@ -1,0 +1,5 @@
+KingKong Drag: copyright KingKong Tuning, all rights reserved, for members of TuneInspect.
+Built on open-source work, thanks to the developers:
+src/timer.js, src/diag.js, src/ecus.js, src/render_link.js and src/kit_*.js come from idrive7-apps (MIT, src/LICENSE-kit.txt). Channel identifiers from its DME catalog.
+src/qrcodegen.js is by Project Nayuki (MIT, src/LICENSE-qrcodegen.txt).
+The fonts are Inter (SIL OFL 1.1, src/LICENSE-Inter.txt).

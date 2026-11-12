@@ -1,0 +1,46 @@
+{
+  "name": "kingkong_drag",
+  "version": "0.10.4",
+  "description": "KingKong Tuning: drag timer, live data, MHD map switch, fault codes and automatic logging",
+  "private": false,
+  "main": "javascript/runner.js",
+  "oapAppSettings": {
+    "maxDiskUsage": 62914560,
+    "cpuLimit": 30,
+    "memoryThresholdKB": 131072,
+    "priority": "PRIO_MEDIUM",
+    "visibility": "FOREGROUND",
+    "latencyClass": "FOREGROUND",
+    "loggingId": "KKDR",
+    "userLoginRequired": false,
+    "backgroundPriority": 150,
+    "someipManifest": "manifest.json"
+  },
+  "files": [
+    "config",
+    "rhmiData",
+    "fonts",
+    "package.json",
+    "npm-shrinkwrap.json",
+    "permissions.json",
+    "javascript",
+    "manifest.json",
+    "CHANGELOG.md",
+    "LICENSES.txt",
+    "license.json"
+  ],
+  "dependencies": {
+    "oap-sdk": "24.10.2"
+  },
+  "engines": {
+    "node": ">=8.7.0"
+  },
+  "author": "KingKong Tuning",
+  "license": "SEE LICENSE IN LICENSES.txt",
+  "mguLocalOnly": true,
+  "mguHmi": [
+    "ID7",
+    "ID8"
+  ],
+  "mguInternet": true
+}

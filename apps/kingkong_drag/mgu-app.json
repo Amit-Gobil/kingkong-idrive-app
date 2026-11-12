@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "kingkong_drag",
+  "version": "0.10.4",
+  "tree": "package",
+  "internet": true,
+  "modules": [
+    "src/main.js",
+    "src/view.js",
+    "src/race.js",
+    "src/cluster.js",
+    "src/cluster_theme.js",
+    "src/cluster_render_client.js",
+    "src/channels.js",
+    "src/poller.js",
+    "src/logstore.js",
+    "src/diag.js",
+    "src/ecus.js",
+    "src/qrcodegen.js",
+    "src/timer.js",
+    "src/i18n.js",
+    "src/kit_record.js",
+    "src/kit_canvas.js",
+    "src/kit_fonts.js",
+    "src/logo.js",
+    "src/font_regular.js",
+    "src/font_semibold.js",
+    "src/font_mono.js",
+    "src/render_link.js",
+    "src/license.js",
+    "src/uploader.js"
+  ],
+  "sdk": [
+    "oap-sdk/src/core/OnlineApp.js",
+    "oap-sdk/src/logging/logging",
+    "oap-sdk/src/someip/someipBuilders"
+  ]
+}
